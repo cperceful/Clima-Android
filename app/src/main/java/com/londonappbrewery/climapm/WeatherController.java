@@ -14,6 +14,15 @@ import android.util.Log;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
+
+import com.loopj.android.http.AsyncHttpClient;
+import com.loopj.android.http.JsonHttpResponseHandler;
+import com.loopj.android.http.RequestParams;
+
+import org.json.JSONObject;
+
+import cz.msebera.android.httpclient.Header;
 
 
 public class WeatherController extends AppCompatActivity {
@@ -78,6 +87,12 @@ public class WeatherController extends AppCompatActivity {
 
                 Log.d("Clima", "Longitude is: " + longitude);
                 Log.d("Clima", "Latitude is: " + latitude);
+
+                RequestParams params = new RequestParams();
+                params.put("lon", longitude);
+                params.put("lat", latitude);
+                params.put("appid", APP_ID);
+                makeRequest(params);
             }
 
             @Override
@@ -98,7 +113,7 @@ public class WeatherController extends AppCompatActivity {
 
         //checks to see if permissions have been granted, requests permission if not
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            // TODO: Consider calling
+
             //    ActivityCompat#requestPermissions
             // here to request the missing permissions, and then overriding
             //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
@@ -133,12 +148,37 @@ public class WeatherController extends AppCompatActivity {
 
 
 
-    // TODO: Add letsDoSomeNetworking(RequestParams params) here:
+
+    private void makeRequest(RequestParams params){
+        AsyncHttpClient client = new AsyncHttpClient();
+
+        client.get(WEATHER_URL, params, new JsonHttpResponseHandler(){
+            @Override
+            public void onSuccess(int statusCode, Header[] headers, JSONObject response){
+                Log.d("Clima", "I did it! JSON: " + response.toString());
+                WeatherDataModel weatherData = WeatherDataModel.fromJson(response);
+                updateUI(weatherData);
+            }
+
+            @Override
+            public void onFailure(int statusCode, Header[] headers, Throwable e, JSONObject response){
+                Log.e("Clima", "Failure: " + e.toString());
+                Log.d("Clima", "Status code " + statusCode);
+                Toast.makeText(WeatherController.this, "Request Failed", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
 
 
 
     // TODO: Add updateUI() here:
+    private void updateUI(WeatherDataModel weather){
+        mTemperatureLabel.setText(weather.getTemperature());
+        mCityLabel.setText(weather.getCity());
 
+        int resourceId = getResources().getIdentifier(weather.getIconName(), "drawable", getPackageName());
+        mWeatherImage.setImageResource(resourceId);
+    }
 
 
     // TODO: Add onPause() here:
